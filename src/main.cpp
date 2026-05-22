@@ -1,4 +1,6 @@
 #include <iostream>
+#define NOMINMAX
+#include <windows.h>
 #include <iomanip>
 #include <limits>
 #include "Calculator.h"
@@ -29,6 +31,7 @@ void printMenu() {
 }
 
 int main() {
+    SetConsoleOutputCP(CP_UTF8);
     Calculator calc;
     int choice = -1;
 
