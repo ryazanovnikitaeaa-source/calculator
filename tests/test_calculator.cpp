@@ -1,116 +1,160 @@
-// Подключаем doctest — одна строка, библиотека встроена в заголовок
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
 #include "../src/Calculator.h"
 
-// ==================== Тесты сложения ====================
+// ==================== Базовые операции ====================
 
-TEST_CASE("Сложение положительных чисел") {
+TEST_CASE("Простое сложение") {
     Calculator calc;
-    CHECK(calc.add(2, 3) == 5);
-    CHECK(calc.add(0, 0) == 0);
-    CHECK(calc.add(100, 200) == 300);
+    CHECK(calc.calculate("2+3") == 5.0);
+    CHECK(calc.calculate("0+0") == 0.0);
+    CHECK(calc.calculate("100+200") == 300.0);
 }
 
-TEST_CASE("Сложение отрицательных чисел") {
+TEST_CASE("Простое вычитание") {
     Calculator calc;
-    CHECK(calc.add(-5, -3) == -8);
-    CHECK(calc.add(-10, 10) == 0);
+    CHECK(calc.calculate("10-4") == 6.0);
+    CHECK(calc.calculate("0-5") == -5.0);
 }
 
-// ==================== Тесты вычитания ====================
-
-TEST_CASE("Вычитание чисел") {
+TEST_CASE("Простое умножение") {
     Calculator calc;
-    CHECK(calc.subtract(10, 3) == 7);
-    CHECK(calc.subtract(0, 5) == -5);
-    CHECK(calc.subtract(-4, -4) == 0);
+    CHECK(calc.calculate("3*4") == 12.0);
+    CHECK(calc.calculate("0*999") == 0.0);
+    CHECK(calc.calculate("-2*5") == -10.0);
 }
 
-// ==================== Тесты умножения ====================
-
-TEST_CASE("Умножение чисел") {
+TEST_CASE("Простое деление") {
     Calculator calc;
-    CHECK(calc.multiply(3, 4) == 12);
-    CHECK(calc.multiply(-2, 5) == -10);
-    CHECK(calc.multiply(0, 999) == 0);
-    CHECK(calc.multiply(-3, -3) == 9);
+    CHECK(calc.calculate("10/2") == 5.0);
+    CHECK(calc.calculate("7/2") == doctest::Approx(3.5));
+    CHECK(calc.calculate("-9/3") == -3.0);
 }
 
-// ==================== Тесты деления ====================
+// ==================== Приоритет операций ====================
 
-TEST_CASE("Деление чисел") {
+TEST_CASE("Умножение выполняется раньше сложения") {
     Calculator calc;
-    CHECK(calc.divide(10, 2) == 5);
-    CHECK(calc.divide(7, 2) == doctest::Approx(3.5));
-    CHECK(calc.divide(-9, 3) == -3);
+    // 2 + 2*2 = 2 + 4 = 6, а не (2+2)*2 = 8
+    CHECK(calc.calculate("2+2*2") == 6.0);
 }
 
-TEST_CASE("Деление на ноль бросает исключение") {
+TEST_CASE("Деление выполняется раньше вычитания") {
     Calculator calc;
-    // Проверяем, что при делении на 0 выбрасывается invalid_argument
-    CHECK_THROWS_AS(calc.divide(5, 0), std::invalid_argument);
-    CHECK_THROWS_AS(calc.divide(0, 0), std::invalid_argument);
+    // 10 - 6/2 = 10 - 3 = 7, а не (10-6)/2 = 2
+    CHECK(calc.calculate("10-6/2") == 7.0);
 }
 
-// ==================== Тесты истории ====================
+TEST_CASE("Несколько операций одного приоритета — слева направо") {
+    Calculator calc;
+    CHECK(calc.calculate("10-3-2") == 5.0);
+    CHECK(calc.calculate("12/2/3") == doctest::Approx(2.0));
+}
 
-TEST_CASE("История пуста при создании калькулятора") {
+// ==================== Скобки ====================
+
+TEST_CASE("Скобки меняют порядок вычисления") {
+    Calculator calc;
+    CHECK(calc.calculate("(2+2)*2") == 8.0);
+}
+
+TEST_CASE("Пример из задания: (8+10)*8") {
+    Calculator calc;
+    CHECK(calc.calculate("(8+10)*8") == 144.0);
+}
+
+TEST_CASE("Вложенные скобки") {
+    Calculator calc;
+    CHECK(calc.calculate("((2+3)*2)") == 10.0);
+}
+
+// ==================== Унарный минус ====================
+
+TEST_CASE("Унарный минус перед числом") {
+    Calculator calc;
+    CHECK(calc.calculate("-5+10") == 5.0);
+}
+
+TEST_CASE("Унарный минус в скобках") {
+    Calculator calc;
+    CHECK(calc.calculate("(-3)*4") == -12.0);
+}
+
+// ==================== Дробные числа ====================
+
+TEST_CASE("Дробные числа в выражении") {
+    Calculator calc;
+    CHECK(calc.calculate("1.5+1.5") == 3.0);
+    CHECK(calc.calculate("0.1+0.2") == doctest::Approx(0.3));
+}
+
+// ==================== История ====================
+
+TEST_CASE("История пуста при создании") {
     Calculator calc;
     CHECK(calc.getHistorySize() == 0);
     CHECK(calc.getHistory().empty());
 }
 
-TEST_CASE("После операции история увеличивается") {
+TEST_CASE("После каждого вычисления история растёт") {
     Calculator calc;
-    calc.add(1, 2);
+    calc.calculate("2+2");
     CHECK(calc.getHistorySize() == 1);
-
-    calc.subtract(5, 3);
+    calc.calculate("3*3");
     CHECK(calc.getHistorySize() == 2);
-
-    calc.multiply(4, 4);
-    CHECK(calc.getHistorySize() == 3);
 }
 
-TEST_CASE("История содержит правильные результаты") {
+TEST_CASE("История хранит правильные результаты") {
     Calculator calc;
-    calc.add(10, 5);
-    calc.multiply(3, 7);
-
-    CHECK(calc.getHistory()[0].result == 15);
-    CHECK(calc.getHistory()[1].result == 21);
+    calc.calculate("5+5");
+    calc.calculate("3*7");
+    CHECK(calc.getHistory()[0].result == 10.0);
+    CHECK(calc.getHistory()[1].result == 21.0);
 }
 
-TEST_CASE("Очистка истории работает корректно") {
+TEST_CASE("Очистка истории работает") {
     Calculator calc;
-    calc.add(1, 1);
-    calc.subtract(5, 2);
+    calc.calculate("2+2");
+    calc.calculate("5-1");
     CHECK(calc.getHistorySize() == 2);
-
     calc.clearHistory();
     CHECK(calc.getHistorySize() == 0);
     CHECK(calc.getHistory().empty());
 }
 
-TEST_CASE("После деления на ноль история не изменяется") {
+// ==================== Ошибки ====================
+
+TEST_CASE("Деление на ноль бросает исключение") {
     Calculator calc;
-    calc.add(1, 1); // одна запись
+    CHECK_THROWS_AS(calc.calculate("10/0"), std::invalid_argument);
+    CHECK_THROWS_AS(calc.calculate("0/0"), std::invalid_argument);
+}
+
+TEST_CASE("После деления на ноль история не меняется") {
+    Calculator calc;
+    calc.calculate("2+2"); // одна запись
 
     try {
-        calc.divide(5, 0); // должна бросить исключение и НЕ писать в историю
+        calc.calculate("5/0");
     } catch (...) {}
 
-    // История должна остаться с одной записью
+    // В историю не должно записаться
     CHECK(calc.getHistorySize() == 1);
 }
 
-TEST_CASE("История содержит правильные выражения в виде строк") {
+TEST_CASE("Пустое выражение бросает исключение") {
     Calculator calc;
-    calc.add(2, 3);
-    // Выражение должно содержать все ключевые части
-    const std::string& expr = calc.getHistory()[0].expression;
-    CHECK(expr.find("2") != std::string::npos);
-    CHECK(expr.find("3") != std::string::npos);
-    CHECK(expr.find("+") != std::string::npos);
+    CHECK_THROWS_AS(calc.calculate(""), std::invalid_argument);
+    CHECK_THROWS_AS(calc.calculate("   "), std::invalid_argument);
+}
+
+TEST_CASE("Некорректный символ бросает исключение") {
+    Calculator calc;
+    CHECK_THROWS_AS(calc.calculate("2@2"), std::invalid_argument);
+    CHECK_THROWS_AS(calc.calculate("2+a"), std::invalid_argument);
+}
+
+TEST_CASE("Незакрытая скобка бросает исключение") {
+    Calculator calc;
+    CHECK_THROWS_AS(calc.calculate("(2+2"), std::invalid_argument);
 }

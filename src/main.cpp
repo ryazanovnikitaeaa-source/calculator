@@ -1,8 +1,9 @@
 #include <iostream>
+#include <string>
+#ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
-#include <iomanip>
-#include <limits>
+#endif
 #include "Calculator.h"
 
 void printHistory(const Calculator& calc) {
@@ -12,7 +13,7 @@ void printHistory(const Calculator& calc) {
         return;
     }
     std::cout << "\n=== История вычислений ===\n";
-    for (int i = 0; i < (int)history.size(); ++i) {
+    for (int i = 0; i < (int)history.size(); i++) {
         std::cout << i + 1 << ". " << history[i].expression << "\n";
     }
     std::cout << "==========================\n\n";
@@ -20,63 +21,73 @@ void printHistory(const Calculator& calc) {
 
 void printMenu() {
     std::cout << "\nВыберите действие:\n"
-              << "  1. Сложение        (+)\n"
-              << "  2. Вычитание       (-)\n"
-              << "  3. Умножение       (*)\n"
-              << "  4. Деление         (/)\n"
-              << "  5. Показать историю\n"
-              << "  6. Очистить историю\n"
+              << "  1. Вычислить выражение\n"
+              << "  2. Показать историю\n"
+              << "  3. Очистить историю\n"
               << "  0. Выход\n"
               << "Ваш выбор: ";
 }
 
 int main() {
-    SetConsoleOutputCP(CP_UTF8);
+#ifdef _WIN32
+    SetConsoleOutputCP(65001); // CP_UTF8
+#endif
+
     Calculator calc;
     int choice = -1;
 
     std::cout << "============================\n";
     std::cout << "   Калькулятор с историей   \n";
     std::cout << "============================\n";
+    std::cout << "Поддерживаются: + - * / и скобки\n";
+    std::cout << "Примеры: 2+2*2    (8+10)*8    100/4-5\n";
 
     while (choice != 0) {
         printMenu();
 
-        if (!(std::cin >> choice)) {
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            std::cout << "Ошибка: введите число от 0 до 6.\n";
+        std::string line;
+        std::getline(std::cin, line);
+
+        // Проверяем, что введено корректное число
+        bool valid = !line.empty();
+        for (int i = 0; i < (int)line.size(); i++) {
+            if (line[i] < '0' || line[i] > '9') {
+                valid = false;
+                break;
+            }
+        }
+
+        if (!valid) {
+            std::cout << "Ошибка: введите число от 0 до 3.\n";
             continue;
         }
 
-        if (choice >= 1 && choice <= 4) {
-            double a, b;
-            std::cout << "Введите первое число: ";
-            std::cin >> a;
-            std::cout << "Введите второе число: ";
-            std::cin >> b;
+        choice = std::stoi(line);
+
+        if (choice == 1) {
+            std::cout << "Введите выражение: ";
+            std::string expression;
+            std::getline(std::cin, expression);
 
             try {
-                double result = 0;
-                if      (choice == 1) result = calc.add(a, b);
-                else if (choice == 2) result = calc.subtract(a, b);
-                else if (choice == 3) result = calc.multiply(a, b);
-                else if (choice == 4) result = calc.divide(a, b);
-
-                std::cout << std::fixed << std::setprecision(6);
+                double result = calc.calculate(expression);
                 std::cout << "Результат: " << result << "\n";
             } catch (const std::invalid_argument& e) {
                 std::cout << "Ошибка: " << e.what() << "\n";
             }
-        } else if (choice == 5) {
+
+        } else if (choice == 2) {
             printHistory(calc);
-        } else if (choice == 6) {
+
+        } else if (choice == 3) {
             calc.clearHistory();
             std::cout << "История очищена.\n";
+
         } else if (choice == 0) {
             std::cout << "До свидания!\n";
+
         } else {
-            std::cout << "Неверный выбор. Введите число от 0 до 6.\n";
+            std::cout << "Неверный выбор. Введите от 0 до 3.\n";
         }
     }
 

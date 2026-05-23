@@ -13,11 +13,9 @@ struct HistoryEntry {
 // Основной класс калькулятора
 class Calculator {
 public:
-    // Арифметические операции
-    double add(double a, double b);
-    double subtract(double a, double b);
-    double multiply(double a, double b);
-    double divide(double a, double b); // бросает std::invalid_argument при делении на 0
+    // Вычислить строку-выражение
+    // Бросает std::invalid_argument если выражение некорректное
+    double calculate(const std::string& expression);
 
     // История вычислений
     const std::vector<HistoryEntry>& getHistory() const;
@@ -26,7 +24,4 @@ public:
 
 private:
     std::vector<HistoryEntry> history;
-
-    // Сохраняет операцию в историю
-    void saveToHistory(const std::string& expression, double result);
 };
